@@ -2,9 +2,9 @@
 #
 # shlock - shlock makefile
 #
-# @(#) $Revision$
-# @(#) $Id$
-# @(#) $Source$
+# @(#) $Revision: 1.2 $
+# @(#) $Id: Makefile,v 1.2 1999/09/27 05:36:31 chongo Exp chongo $
+# @(#) $Source: /usr/local/src/cmd/shlock/RCS/Makefile,v $
 #
 # Please do not copyright this code.  This code is in the public domain.
 #
@@ -22,9 +22,10 @@
 
 SHELL= /bin/sh
 CC= cc
-CFLAGS= -g3 -O2 -n32
+CFLAGS= -g3 -O2
 
 DESTDIR = /usr/local/bin
+MAN1DIR = /usr/local/man/man1
 INSTALL= install
 TARGETS= shlock
 
@@ -36,8 +37,9 @@ shlock: shlock.o
 shlock.o: shlock.c
 	${CC} ${CFLAGS} shlock.c -c
 
-install: all
+install: all shlock.1
 	${INSTALL} -m 0755 -F ${DESTDIR} shlock
+	${INSTALL} -m 0644 -F ${MAN1DIR} shlock.1
 
 clean:
 	rm -f *.o
