@@ -54,22 +54,83 @@ with a zero status.
 The following example shows how
 .I shlock
 would be used within a shell script:
-.RS
+.sp 1
 .nf
-.\" =()<LOCK=@<_PATH_LOCKS>@/LOCK.send>()=
-LOCK=/usr/local/news/lib/locks/LOCK.send
-trap 'rm -f ${LOCK} ; exit 1' 1 2 3 15
-if shlock -p $$ -f ${LOCK} ; then
-    # Do appropriate work
-else
-    echo Locked by `cat ${LOCK}`
-f\&i
+# setup
+#
+SHLOCK=/usr/local/bin/shlock
+
+# obtain the lock
+#
+LOCK=/tmp/lock.progname	# XXX - change progname to basename of program
+if [ ! -x "$SHLOCK" ]; then
+    echo "$0: cannot find executable: $SHLOCK" 1>&2
+    exit 1
+fi
+if ! "$SHLOCK" -p $$ -f "$LOCK"; then
+    echo "$0: locked by process" `cat "$LOCK"` 1>&2
+    exit 2
+fi
+# must trap after locking to avoid removal of another process lock
+trap "rm -f $LOCK; exit" 0 1 2 3 15
+
+# do something ...
 .fi
-.RE
+.sp 1
+If the script uses \-f to override locking, then one would use:
+.sp 1
+.nf
+# setup
+#
+SHLOCK=/usr/local/bin/shlock
+
+USAGE="usage: $0 [-f] arg ..."
+F_FLAG=
+set -- `/usr/bin/getopt f $*`
+if [ $? != 0 ]; then
+    echo "$0: unknown or invalid -flag" 1>&2
+    echo $USAGE 1>&2
+    exit 1
+fi
+for i in $*; do
+    case "$i" in
+    -f) F_FLAG="true" ;;
+    esac
+    shift
+done
+if [ $# -lt 1 ]; then
+    echo "$0: must have at least one arg" 1>&2
+    echo $USAGE 1>&2
+    exit 2
+fi
+
+# ...
+
+# obtain the lock
+#
+LOCK=/tmp/lock.progname	# XXX - change progname to basename of program
+if [ ! -x "$SHLOCK" ]; then
+    echo "$0: cannot find executable: $SHLOCK" 1>&2
+    exit 3
+fi
+if ! "$SHLOCK" -p $$ -f "$LOCK"; then
+    if [ -z "$FORCE" ]; then
+	echo "$0: locked by process" `cat "$LOCK"` 1>&2
+	exit 2
+    else
+    	# the -f forced a lock override, so we must not remove the lock
+	LOCK=
+    fi
+fi
+# must trap after locking to avoid removal of another process lock
+trap "rm -f $LOCK; exit" 0 1 2 3 15
+
+# do something ...
+.fi
 .SH HISTORY
 Written by Rich $alz <rsalz@uunet.uu.net> after a description of HDB UUCP
 locking given by Peter Honeyman.
 .de R$
 This is revision \\$3, dated \\$4.
 ..
-.R$ $Id: shlock.1,v 1.1 1998/03/03 16:57:10 chongo Exp $
+.R$ $Id: shlock.1,v 1.1 2004/02/27 23:32:43 chongo Exp chongo $
