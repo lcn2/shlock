@@ -2,8 +2,8 @@
 **  Produce reliable locks for shell scripts, by Peter Honeyman as told
 **  to Rich $alz.
 **
-** @(#) $Revision: 1.2 $
-** @(#) $Id: shlock.c,v 1.2 1999/09/27 05:36:31 chongo Exp chongo $
+** @(#) $Revision: 1.3 $
+** @(#) $Id: shlock.c,v 1.3 2000/04/23 07:46:34 chongo Exp chongo $
 ** @(#) $Source: /usr/local/src/cmd/shlock/RCS/shlock.c,v $
 */
 /*#include "configdata.h"*/
@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <string.h>
+#include <unistd.h>
 /*#include "clibrary.h"*/
 
 /*
@@ -30,6 +31,7 @@ typedef void NORETURN;
 #define FALSE 0
 #endif
 #define NEWSUMASK 0002
+#define MAXTRY 16	/* max open retries */
 
 STATIC BOOL	BinaryLock;
 STATIC char	CANTUNLINK[] = "Can't unlink \"%s\", %s\n";
@@ -51,6 +53,7 @@ ValidLock(name, JustChecking)
     char		buff[BUFSIZ];
 
     /* Open the file. */
+    errno = 0;
     if ((fd = open(name, O_RDONLY)) < 0) {
 	if (!JustChecking)
 	    (void)fprintf(stderr, CANTOPEN, name, strerror(errno));
@@ -73,10 +76,11 @@ ValidLock(name, JustChecking)
 	pid = atoi(buff);
     }
     (void)close(fd);
-    if (pid <= 0)
+    if (pid <= 1)
 	return FALSE;
 
     /* Send the signal. */
+    errno = 0;
     if (kill((PID_T)pid, 0) < 0 && errno == ESRCH)
 	return FALSE;
 
@@ -93,6 +97,7 @@ UnlinkAndExit(name, x)
     char	*name;
     int		x;
 {
+    errno = 0;
     if (unlink(name) < 0)
 	(void)fprintf(stderr, CANTUNLINK, name, strerror(errno));
     exit(x);
@@ -168,8 +173,12 @@ main(ac, av)
     else
 	(void)sprintf(tmp, "shlock%ld", (long)getpid());
 
-    /* Loop until we can open the file. */
-    while ((fd = open(tmp, O_RDWR | O_CREAT | O_EXCL, 0644)) < 0)
+    /* Loop for a while, until we can open the file. */
+    i = 0;
+    errno = 0;
+    while ((fd = open(tmp, O_RDWR | O_CREAT | O_EXCL, 0644)) < 0) {
+
+	/* process open failure */
 	switch (errno) {
 	default:
 	    /* Unknown error -- give up. */
@@ -184,7 +193,17 @@ main(ac, av)
 	    break;
 	}
 
+	/* wait and retry */
+	if (++i >= MAXTRY) {
+	    (void)fprintf(stderr, CANTOPEN, tmp, "too many retries");
+	    exit(1);
+	}
+	usleep(2500000);	/* wait 2.5 seconds */
+	errno = 0;
+    }
+
     /* Write the process ID. */
+    errno = 0;
     if (BinaryLock)
 	ok = write(fd, (POINTER)pid, (SIZE_T)sizeof pid) == sizeof pid;
     else {
@@ -209,7 +228,9 @@ main(ac, av)
     }
 
     /* Try to link the temporary to the lockfile. */
-    while (link(tmp, name) < 0)
+    i = 0;
+    errno = 0;
+    while (link(tmp, name) < 0) {
 	switch (errno) {
 	default:
 	    /* Unknown error -- give up. */
@@ -226,6 +247,16 @@ main(ac, av)
 		UnlinkAndExit(tmp, 1);
 	    }
 	}
+
+	/* wait and retry */
+	if (++i >= MAXTRY) {
+	    (void)fprintf(stderr, "Too many link retries of \"%s\" to \"%s\"\n",
+			  tmp, name);
+	    exit(1);
+	}
+	usleep(2500000);	/* wait 2.5 seconds */
+	errno = 0;
+    }
 
     UnlinkAndExit(tmp, 0);
     /* NOTREACHED */
