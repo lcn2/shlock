@@ -1,7 +1,10 @@
-/*  $Revision: 1.6 $
-**
+/*
 **  Produce reliable locks for shell scripts, by Peter Honeyman as told
 **  to Rich $alz.
+**
+** @(#) $Revision$
+** @(#) $Id$
+** @(#) $Source$
 */
 /*#include "configdata.h"*/
 #include <stdio.h>
