@@ -2,8 +2,8 @@
 **  Produce reliable locks for shell scripts, by Peter Honeyman as told
 **  to Rich $alz.
 **
-** @(#) $Revision: 1.3 $
-** @(#) $Id: shlock.c,v 1.3 2000/04/23 07:46:34 chongo Exp chongo $
+** @(#) $Revision: 1.4 $
+** @(#) $Id: shlock.c,v 1.4 2004/02/27 22:48:48 chongo Exp chongo $
 ** @(#) $Source: /usr/local/src/cmd/shlock/RCS/shlock.c,v $
 */
 /*#include "configdata.h"*/
@@ -31,7 +31,7 @@ typedef void NORETURN;
 #define FALSE 0
 #endif
 #define NEWSUMASK 0002
-#define MAXTRY 16	/* max open retries */
+#define MAXTRY 17	/* max open retries */
 
 STATIC BOOL	BinaryLock;
 STATIC char	CANTUNLINK[] = "Can't unlink \"%s\", %s\n";
@@ -198,7 +198,7 @@ main(ac, av)
 	    (void)fprintf(stderr, CANTOPEN, tmp, "too many retries");
 	    exit(1);
 	}
-	usleep(2500000);	/* wait 2.5 seconds */
+	usleep(1270000);	/* wait 1.27 seconds */
 	errno = 0;
     }
 
@@ -252,9 +252,10 @@ main(ac, av)
 	if (++i >= MAXTRY) {
 	    (void)fprintf(stderr, "Too many link retries of \"%s\" to \"%s\"\n",
 			  tmp, name);
-	    exit(1);
+	    UnlinkAndExit(tmp, 1);
+	    /* NOTREACHED */
 	}
-	usleep(2500000);	/* wait 2.5 seconds */
+	usleep(1270000);	/* wait 1.27 seconds */
 	errno = 0;
     }
 
