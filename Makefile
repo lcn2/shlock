@@ -2,8 +2,8 @@
 #
 # shlock - shlock makefile
 #
-# @(#) $Revision: 1.3 $
-# @(#) $Id: Makefile,v 1.3 1999/10/10 00:49:59 chongo Exp chongo $
+# @(#) $Revision: 1.4 $
+# @(#) $Id: Makefile,v 1.4 2000/04/23 07:58:04 chongo Exp chongo $
 # @(#) $Source: /usr/local/src/cmd/shlock/RCS/Makefile,v $
 #
 # Please do not copyright this code.  This code is in the public domain.
@@ -22,7 +22,7 @@
 
 SHELL= /bin/sh
 CC= cc
-CFLAGS= -g3 -O2
+CFLAGS= -g3 -O3 -Wall -W
 
 DESTDIR = /usr/local/bin
 MAN1DIR = /usr/local/man/man1
