@@ -2,8 +2,8 @@
 **  Produce reliable locks for shell scripts, by Peter Honeyman as told
 **  to Rich $alz.
 **
-** @(#) $Revision: 1.4 $
-** @(#) $Id: shlock.c,v 1.4 2004/02/27 22:48:48 chongo Exp chongo $
+** @(#) $Revision: 1.5 $
+** @(#) $Id: shlock.c,v 1.5 2004/02/28 02:02:17 chongo Exp chongo $
 ** @(#) $Source: /usr/local/src/cmd/shlock/RCS/shlock.c,v $
 */
 /*#include "configdata.h"*/
@@ -11,8 +11,11 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <signal.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 /*#include "clibrary.h"*/
 
 /*
@@ -31,7 +34,8 @@ typedef void NORETURN;
 #define FALSE 0
 #endif
 #define NEWSUMASK 0002
-#define MAXTRY 17	/* max open retries */
+#define MAX_TMP_TRY 17		/* max tmp file open retries */
+#define TMP_USEC_WAIT 1270000	/* micro secs beteen tmp open or link retries */
 
 STATIC BOOL	BinaryLock;
 STATIC char	CANTUNLINK[] = "Can't unlink \"%s\", %s\n";
@@ -49,15 +53,18 @@ ValidLock(name, JustChecking)
 {
     register int	fd;
     register int	i;
-    int			pid;
+    long		pid;
     char		buff[BUFSIZ];
 
     /* Open the file. */
     errno = 0;
     if ((fd = open(name, O_RDONLY)) < 0) {
-	if (!JustChecking)
+	if (JustChecking) {
+	    return FALSE;
+	} else {
 	    (void)fprintf(stderr, CANTOPEN, name, strerror(errno));
-	return TRUE;
+	    return TRUE;
+	}
     }
 
     /* Read the PID that is written there. */
@@ -73,10 +80,15 @@ ValidLock(name, JustChecking)
 	    return FALSE;
 	}
 	buff[i] = '\0';
-	pid = atoi(buff);
+	errno = 0;
+	pid = strtol(buff, NULL, 0);
+	if (errno != 0) {
+	    (void)close(fd);
+	    return FALSE;
+	}
     }
     (void)close(fd);
-    if (pid <= 1)
+    if ((PID_T)pid <= 0)
 	return FALSE;
 
     /* Send the signal. */
@@ -110,7 +122,22 @@ UnlinkAndExit(name, x)
 STATIC NORETURN
 Usage()
 {
-    (void)fprintf(stderr, "Usage: shlock [-u|-b] -f file -p pid\n");
+    (void)fprintf(stderr,
+        "Usage: shlock -f file [-p pid] [-b|-u] [-c]\n"
+	"\n"
+	"\t-f file\tlock filename\n"
+	"\t-p pid\tif lock is granted, lock with pid (def: parent process ID)\n"
+	"\t-b\twrite pid into lock file in binary format (def: ASCII)\n"
+	"\t-u\talias for -b\n"
+	"\t-c\ttest for lock without locking\n"
+	"\n"
+	"without -c:\n"
+	"\texit 0 (TRUE shell exit) if lock was created and granted to pid\n"
+	"\texit 1 (FALSE shell exit) if locked\n"
+	"\n"
+	"with -c:\n"
+	"\texit 0 (TRUE shell exit) if not locked\n"
+	"\texit 1 (FALSE shell exit) if locked\n");
     exit(1);
     /* NOTREACHED */
 }
@@ -127,7 +154,7 @@ main(ac, av)
     char		tmp[BUFSIZ];
     char		buff[BUFSIZ];
     char		*name;
-    int			pid;
+    long		pid;
     BOOL		ok;
     BOOL		JustChecking;
     extern int		optind;
@@ -138,6 +165,7 @@ main(ac, av)
     name = NULL;
     JustChecking = FALSE;
     (void)umask(NEWSUMASK);
+    pid = (long)getppid();
 
     /* Parse JCL. */
     while ((i = getopt(ac, av, "bcup:f:")) != EOF)
@@ -153,7 +181,11 @@ main(ac, av)
 	    JustChecking = TRUE;
 	    break;
 	case 'p':
-	    pid = atoi(optarg);
+	    errno = 0;
+	    pid = strtol(optarg, NULL, 0);
+	    if (errno != 0) {
+		pid = 0;
+	    }
 	    break;
 	case 'f':
 	    name = optarg;
@@ -161,7 +193,7 @@ main(ac, av)
 	}
     ac -= optind;
     av += optind;
-    if (ac || pid == 0 || name == NULL)
+    if (ac || (PID_T)pid <= 0 || name == NULL)
 	Usage();
 
     /* Create the temp file in the same directory as the destination. */
@@ -194,11 +226,13 @@ main(ac, av)
 	}
 
 	/* wait and retry */
-	if (++i >= MAXTRY) {
+	if (++i >= MAX_TMP_TRY) {
 	    (void)fprintf(stderr, CANTOPEN, tmp, "too many retries");
 	    exit(1);
 	}
-	usleep(1270000);	/* wait 1.27 seconds */
+
+	/* wait before reattempting to get tmp file */
+	usleep(TMP_USEC_WAIT);
 	errno = 0;
     }
 
@@ -207,7 +241,7 @@ main(ac, av)
     if (BinaryLock)
 	ok = write(fd, (POINTER)pid, (SIZE_T)sizeof pid) == sizeof pid;
     else {
-	(void)sprintf(buff, "%d\n", pid);
+	(void)sprintf(buff, "%ld\n", pid);
 	i = strlen(buff);
 	ok = write(fd, (POINTER)buff, (SIZE_T)i) == i;
     }
@@ -232,12 +266,6 @@ main(ac, av)
     errno = 0;
     while (link(tmp, name) < 0) {
 	switch (errno) {
-	default:
-	    /* Unknown error -- give up. */
-	    (void)fprintf(stderr, "Can't link \"%s\" to \"%s\", %s\n",
-		    tmp, name, strerror(errno));
-	    UnlinkAndExit(tmp, 1);
-	    /* NOTREACHED */
 	case EEXIST:
 	    /* File exists; if lock is valid, give up. */
 	    if (ValidLock(name, FALSE))
@@ -246,19 +274,31 @@ main(ac, av)
 		(void)fprintf(stderr, CANTUNLINK, name, strerror(errno));
 		UnlinkAndExit(tmp, 1);
 	    }
+	    break;
+	default:
+	    /* Unknown error -- give up. */
+	    (void)fprintf(stderr, "Can't link \"%s\" to \"%s\", %s\n",
+		    tmp, name, strerror(errno));
+	    UnlinkAndExit(tmp, 1);
+	    break;
 	}
 
 	/* wait and retry */
-	if (++i >= MAXTRY) {
+	if (++i >= MAX_TMP_TRY) {
 	    (void)fprintf(stderr, "Too many link retries of \"%s\" to \"%s\"\n",
 			  tmp, name);
 	    UnlinkAndExit(tmp, 1);
 	    /* NOTREACHED */
 	}
-	usleep(1270000);	/* wait 1.27 seconds */
+
+	/* wait before reattempting to get relink the tmp file */
+	if (i > 1) {
+	    usleep(TMP_USEC_WAIT);
+	}
 	errno = 0;
     }
 
     UnlinkAndExit(tmp, 0);
     /* NOTREACHED */
+    exit(0);
 }

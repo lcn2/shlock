@@ -1,11 +1,13 @@
-.\" $Revision: 1.2 $
+.\" $Revision: 1.3 $
 .TH SHLOCK 1
 .SH NAME
 shlock \- create lock files for use in shell scripts
 .SH SYNOPSIS
 .B shlock
-.BI \-p " pid"
 .BI \-f " name"
+[
+.BI \-p " pid"
+]
 [
 .B \-b
 ]
@@ -25,18 +27,71 @@ into it.
 If the file already exists,
 .I shlock
 will read the process ID from the file and test to see if the process
-is currently running.
+is currently active.
 If the process exists, then the file will not be created.
 .PP
-.I Shlock
-exits with a zero status if it was able to create the lock file, or
-non-zero if the file refers to currently-active process.
+Without
+.B \-c
+.I shlock
+exits 0 (TRUE shell exit) if we obtained the lock on behalf of
+.IR pid .
+It exits 1 (FALSE shell exit) if already locked.
+.PP
+With
+.B \-c
+.I shlock
+exits 0 (TRUE shell exit) if not locked, and
+exits 1 (FALSE shell exit) if locked.
+.PP
+.B NOTE:
+When we say the the is locked, we mean that
+the file exists and contains the pid  of a currently-active process.
+We do
+.B NOT
+refer to kernel file locking.
+.PP
+.B NOTE:
+When a lock is obtained, it may be obtained
+on behalf on when a lock is obtained, it may be obtained
+on behalf of any process ID.
+.PP
+.B NOTE:
+If a pid begins with
+.I 0x
+then it is assumed to be hex (base 16).
+If a pid begins with
+.I 0
+then it is assumed to be in octal (base 8).
+In all other cases the pid is assumed to be
+in decimal (base 10).
+The pid numeric value is assumed to
+stop at the first non-digit, leading
+.I 0x
+not withstanding.
 .SH OPTIONS
+.TP
+.BI \-f " name"
+The lock file to create, test and/or use.
+While this is an option, it is required.  :-)
+.TP
+.BI \-p " pid"
+The process ID to write to the lock file if it is obtained.
+By default,
+.I pid
+is the parent process ID of the
+.I shlock
+program.
+That is, by default
+.I pid
+is the process ID of the program that forked
+this tool.
 .TP
 .B \-b
 Process IDs are normally read and written in ASCII.
 If the ``\-b'' flag is used, then they will be written as a binary
 .IR int .
+.TP
+.B \-u
 For compatibility with other systems, the ``\-u'' flag is accepted as
 a synonym for ``\-b'' since binary locks are used by many UUCP packages.
 .TP
@@ -45,16 +100,23 @@ If the ``\-c'' flag is used, then
 .I shlock
 will not create a lock file, but will instead use the file to see if
 the lock is held by another program.
+.sp 1
 If the lock is valid, the program will exit with a non-zero status; if
 the lock is not valid (i.e., invoking
 .I shlock
 without the flag would have succeeded), then the program will exit
 with a zero status.
+When
+.B \-c
+is given, then any
+.BI \-p " pid"
+is ignored.
 .SH EXAMPLES
 The following example shows how
 .I shlock
 would be used within a shell script:
 .sp 1
+.in +0.5i
 .nf
 # setup
 #
@@ -62,7 +124,8 @@ SHLOCK=/usr/local/bin/shlock
 
 # obtain the lock
 #
-LOCK=/tmp/.lock.progname # XXX - change progname to basename of program
+# XXX - change the string prog to the basename of the script
+LOCK=/tmp/.lock.prog
 if [ ! -x "$SHLOCK" ]; then
     echo "$0: cannot find executable: $SHLOCK" 1>&2
     exit 1
@@ -76,17 +139,27 @@ trap "rm -f $LOCK; exit" 0 1 2 3 15
 
 # do something ...
 .fi
+.in -0.5i
 .sp 1
-If the script uses \-f to override locking, then one would use:
+In another example, let us assume we want to write a script with
+an
+.I \-F
+option that indicated that the script should proceed even if
+the lock was not granted.
+That is
+.I \-F
+means to force past a lock.
+Here is how this would be done:
 .sp 1
+.in +0.5i
 .nf
 # setup
 #
 SHLOCK=/usr/local/bin/shlock
 
-USAGE="usage: $0 [-f] arg ..."
+USAGE="usage: $0 [-F] arg ..."
 F_FLAG=
-set -- `/usr/bin/getopt f $*`
+set -- `/usr/bin/getopt F $*`
 if [ $? != 0 ]; then
     echo "$0: unknown or invalid -flag" 1>&2
     echo $USAGE 1>&2
@@ -94,7 +167,7 @@ if [ $? != 0 ]; then
 fi
 for i in $*; do
     case "$i" in
-    -f) F_FLAG="true" ;;
+    -F) F_FLAG="true" ;;
     esac
     shift
 done
@@ -108,7 +181,8 @@ fi
 
 # obtain the lock
 #
-LOCK=/tmp/.lock.progname # XXX - change progname to basename of program
+# XXX - change the string prog to the basename of the script
+LOCK=/tmp/.lock.progname
 if [ ! -x "$SHLOCK" ]; then
     echo "$0: cannot find executable: $SHLOCK" 1>&2
     exit 3
@@ -118,7 +192,7 @@ if ! "$SHLOCK" -p $$ -f "$LOCK"; then
 	echo "$0: locked by process" `cat "$LOCK"` 1>&2
 	exit 2
     else
-    	# the -f forced a lock override, so we must not remove the lock
+    	# the -F forced a lock override, so we must not remove the lock
 	LOCK=
     fi
 fi
@@ -127,10 +201,47 @@ trap "rm -f $LOCK; exit" 0 1 2 3 15
 
 # do something ...
 .fi
+.in -0.5i
+.sp 1
+In this example, we want silently exit if there is lock
+and proceed otherwise.
+We assume that something else will sometimes hold the lock.
+We do not want to lock it ourselves, only ensure that
+the lock is not held by someone else.
+Here is how this would be done:
+.sp 1
+.in +0.5i
+.nf
+# setup
+#
+SHLOCK=/usr/local/bin/shlock
+
+# ensure that it is not locked
+#
+LOCK=/tmp/.lock.name
+if [ ! -x "$SHLOCK" ]; then
+    echo "$0: cannot find executable: $SHLOCK" 1>&2
+    exit 1
+fi
+if ! "$SHLOCK" -c -f "$LOCK"; then
+    # locked is else by someone, so silently exit
+    exit 0
+fi
+
+# do something ...
+
+.fi
+.in -0.5i
 .SH HISTORY
 Written by Rich $alz <rsalz@uunet.uu.net> after a description of HDB UUCP
 locking given by Peter Honeyman.
+.sp
+Bug fixes relating to
+.I \-c
+and the removal a needless sleep by
+Landon Curt Noll
+(http://www.isthe.com/chongo/index.html).
 .de R$
 This is revision \\$3, dated \\$4.
 ..
-.R$ $Id: shlock.1,v 1.2 2004/02/27 23:40:34 chongo Exp chongo $
+.R$ $Id: shlock.1,v 1.3 2004/02/28 01:09:10 chongo Exp chongo $
