@@ -1,4 +1,4 @@
-.\" $Revision: 1.1 $
+.\" $Revision: 1.2 $
 .TH SHLOCK 1
 .SH NAME
 shlock \- create lock files for use in shell scripts
@@ -62,7 +62,7 @@ SHLOCK=/usr/local/bin/shlock
 
 # obtain the lock
 #
-LOCK=/tmp/lock.progname	# XXX - change progname to basename of program
+LOCK=/tmp/.lock.progname # XXX - change progname to basename of program
 if [ ! -x "$SHLOCK" ]; then
     echo "$0: cannot find executable: $SHLOCK" 1>&2
     exit 1
@@ -108,7 +108,7 @@ fi
 
 # obtain the lock
 #
-LOCK=/tmp/lock.progname	# XXX - change progname to basename of program
+LOCK=/tmp/.lock.progname # XXX - change progname to basename of program
 if [ ! -x "$SHLOCK" ]; then
     echo "$0: cannot find executable: $SHLOCK" 1>&2
     exit 3
@@ -133,4 +133,4 @@ locking given by Peter Honeyman.
 .de R$
 This is revision \\$3, dated \\$4.
 ..
-.R$ $Id: shlock.1,v 1.1 2004/02/27 23:32:43 chongo Exp chongo $
+.R$ $Id: shlock.1,v 1.2 2004/02/27 23:40:34 chongo Exp chongo $
