@@ -2,15 +2,16 @@
 **  Produce reliable locks for shell scripts, by Peter Honeyman as told
 **  to Rich $alz.
 **
-** @(#) $Revision$
-** @(#) $Id$
-** @(#) $Source$
+** @(#) $Revision: 1.2 $
+** @(#) $Id: shlock.c,v 1.2 1999/09/27 05:36:31 chongo Exp chongo $
+** @(#) $Source: /usr/local/src/cmd/shlock/RCS/shlock.c,v $
 */
 /*#include "configdata.h"*/
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <string.h>
 /*#include "clibrary.h"*/
 
 /*
@@ -124,6 +125,8 @@ main(ac, av)
     int			pid;
     BOOL		ok;
     BOOL		JustChecking;
+    extern int		optind;
+    extern char *	optarg;
 
     /* Set defaults. */
     pid = 0;
