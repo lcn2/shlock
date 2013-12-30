@@ -2,9 +2,9 @@
 #
 # shlock - shlock makefile
 #
-# @(#) $Revision: 1.4 $
-# @(#) $Id: Makefile,v 1.4 2000/04/23 07:58:04 chongo Exp chongo $
-# @(#) $Source: /usr/local/src/cmd/shlock/RCS/Makefile,v $
+# @(#) $Revision: 1.5 $
+# @(#) $Id: Makefile,v 1.5 2005/01/05 09:47:57 chongo Exp chongo $
+# @(#) $Source: /usr/local/src/bin/shlock/RCS/Makefile,v $
 #
 # Please do not copyright this code.  This code is in the public domain.
 #
@@ -24,10 +24,16 @@ SHELL= /bin/sh
 CC= cc
 CFLAGS= -g3 -O3 -Wall -W
 
-DESTDIR = /usr/local/bin
+DESTBIN = /usr/local/bin
 MAN1DIR = /usr/local/man/man1
 INSTALL= install
 TARGETS= shlock
+
+# remote operations
+#
+THISDIR= shlock
+RSRCPSH= rsrcpush
+RMAKE= rmake
 
 all: ${TARGETS}
 
@@ -38,7 +44,7 @@ shlock.o: shlock.c
 	${CC} ${CFLAGS} shlock.c -c
 
 install: all shlock.1
-	${INSTALL} -m 0755 shlock ${DESTDIR}/shlock
+	${INSTALL} -m 0755 shlock ${DESTBIN}/shlock
 	${INSTALL} -m 0644 shlock.1 ${MAN1DIR}/shlock.1
 
 clean:
@@ -46,3 +52,28 @@ clean:
 
 clobber: clean
 	rm -f ${TARGETS}
+
+# push source to remote sites
+#
+pushsrc:
+	${RSRCPSH} -v -x . ${THISDIR}
+
+pushsrcq:
+	@${RSRCPSH} -q . ${THISDIR}
+
+pushsrcn:
+	${RSRCPSH} -v -x -n . ${THISDIR}
+
+# run make on remote hosts
+#
+rmtall:
+	${RMAKE} -v ${THISDIR} all
+
+rmtinstall:
+	${RMAKE} -v ${THISDIR} install
+
+rmtclean:
+	${RMAKE} -v ${THISDIR} clean
+
+rmtclobber:
+	${RMAKE} -v ${THISDIR} clobber
