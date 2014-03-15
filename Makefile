@@ -2,8 +2,8 @@
 #
 # shlock - shlock makefile
 #
-# @(#) $Revision: 1.6 $
-# @(#) $Id: Makefile,v 1.6 2013/12/30 06:02:31 chongo Exp root $
+# @(#) $Revision: 1.7 $
+# @(#) $Id: Makefile,v 1.7 2014/03/15 23:45:49 root Exp root $
 # @(#) $Source: /usr/local/src/bin/shlock/RCS/Makefile,v $
 #
 # Please do not copyright this code.  This code is in the public domain.
@@ -62,13 +62,13 @@ help:
 	@echo make clobber
 	@echo
 	@echo make pushsrc
-	@echo make pushsrcq
 	@echo make pushsrcn
 	@echo
 	@echo make rmtall
 	@echo make rmtinstall
-	@echo make rmtclean
 	@echo make rmtclobber
+	@echo
+	@echo make univ
 
 # push source to remote sites
 #
@@ -94,3 +94,7 @@ rmtclean:
 
 rmtclobber:
 	${RMAKE} -v ${THISDIR} clobber
+
+# build, install, and cleanup everywhere
+#
+univ: all install clobber pushsrc rmtall rmtinstall rmtclobber
