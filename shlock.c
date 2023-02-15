@@ -173,6 +173,7 @@ main(ac, av)
 	default:
 	    Usage();
 	    /* NOTREACHED */
+	    break;
 	case 'b':
 	case 'u':
 	    BinaryLock = TRUE;
