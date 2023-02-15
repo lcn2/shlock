@@ -2,8 +2,8 @@
 #
 # shlock - shlock makefile
 #
-# @(#) $Revision: 1.7 $
-# @(#) $Id: Makefile,v 1.7 2014/03/15 23:45:49 root Exp root $
+# @(#) $Revision: 1.8 $
+# @(#) $Id: Makefile,v 1.8 2014/03/15 23:59:57 root Exp $
 # @(#) $Source: /usr/local/src/bin/shlock/RCS/Makefile,v $
 #
 # Please do not copyright this code.  This code is in the public domain.

@@ -2,9 +2,9 @@
 **  Produce reliable locks for shell scripts, by Peter Honeyman as told
 **  to Rich $alz.
 **
-** @(#) $Revision: 1.5 $
-** @(#) $Id: shlock.c,v 1.5 2004/02/28 02:02:17 chongo Exp chongo $
-** @(#) $Source: /usr/local/src/cmd/shlock/RCS/shlock.c,v $
+** @(#) $Revision: 1.6 $
+** @(#) $Id: shlock.c,v 1.6 2005/01/05 09:28:02 chongo Exp $
+** @(#) $Source: /usr/local/src/bin/shlock/RCS/shlock.c,v $
 */
 /*#include "configdata.h"*/
 #include <stdio.h>
