@@ -25,12 +25,6 @@ MAN1DIR = /usr/local/man/man1
 INSTALL= install
 TARGETS= shlock
 
-# remote operations
-#
-THISDIR= shlock
-RSRCPSH= rsrcpush
-RMAKE= rmake
-
 all: ${TARGETS}
 
 shlock: shlock.o
