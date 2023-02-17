@@ -1,6 +1,6 @@
 #!/usr/bin/env make
 #
-# shlock - shlock makefile
+# shlock - create lock files for use in shell scripts
 #
 # Please do not copyright this code.  This code is in the public domain.
 #
