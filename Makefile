@@ -1,10 +1,6 @@
-#!/bin/make
+#!/usr/bin/env make
 #
 # shlock - shlock makefile
-#
-# @(#) $Revision: 1.8 $
-# @(#) $Id: Makefile,v 1.8 2014/03/15 23:59:57 root Exp $
-# @(#) $Source: /usr/local/src/bin/shlock/RCS/Makefile,v $
 #
 # Please do not copyright this code.  This code is in the public domain.
 #
@@ -20,7 +16,7 @@
 #
 # Share and enjoy!
 
-SHELL= /bin/sh
+SHELL= bash
 CC= cc
 CFLAGS= -g3 -O3 -Wall -W
 
@@ -60,41 +56,3 @@ help:
 	@echo make install
 	@echo make clean
 	@echo make clobber
-	@echo
-	@echo make pushsrc
-	@echo make pushsrcn
-	@echo
-	@echo make rmtall
-	@echo make rmtinstall
-	@echo make rmtclobber
-	@echo
-	@echo make univ
-
-# push source to remote sites
-#
-pushsrc:
-	${RSRCPSH} -v -x . ${THISDIR}
-
-pushsrcq:
-	@${RSRCPSH} -q . ${THISDIR}
-
-pushsrcn:
-	${RSRCPSH} -v -x -n . ${THISDIR}
-
-# run make on remote hosts
-#
-rmtall:
-	${RMAKE} -v ${THISDIR} all
-
-rmtinstall:
-	${RMAKE} -v ${THISDIR} install
-
-rmtclean:
-	${RMAKE} -v ${THISDIR} clean
-
-rmtclobber:
-	${RMAKE} -v ${THISDIR} clobber
-
-# build, install, and cleanup everywhere
-#
-univ: all install clobber pushsrc rmtall rmtinstall rmtclobber
