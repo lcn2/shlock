@@ -6,7 +6,7 @@
 ** @(#) $Id: shlock.c,v 1.6 2005/01/05 09:28:02 chongo Exp $
 ** @(#) $Source: /usr/local/src/bin/shlock/RCS/shlock.c,v $
 */
-/*#include "configdata.h"*/
+
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -16,40 +16,28 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-/*#include "clibrary.h"*/
+#include <stdbool.h>
 
 /*
- * inn setup by hand
+ * official version
  */
-#define STATIC static
-typedef int BOOL;
-typedef pid_t PID_T;
-typedef size_t SIZE_T;
-typedef void * POINTER;
-typedef void NORETURN;
-#if !defined(TRUE)
-#define TRUE 1
-#endif
-#if !defined(FALSE)
-#define FALSE 0
-#endif
+#define VERSION "1.6.1 2025-03-25"          /* format: major.minor YYYY-MM-DD */
+
 #define NEWSUMASK 0002
 #define MAX_TMP_TRY 17		/* max tmp file open retries */
 #define TMP_USEC_WAIT 1270000	/* micro secs beteen tmp open or link retries */
 
-STATIC BOOL	BinaryLock;
-STATIC char	CANTUNLINK[] = "Can't unlink \"%s\", %s\n";
-STATIC char	CANTOPEN[] = "Can't open \"%s\", %s\n";
+static bool	BinaryLock;
+static char	CANTUNLINK[] = "Can't unlink \"%s\", %s\n";
+static char	CANTOPEN[] = "Can't open \"%s\", %s\n";
 
 
 /*
 **  See if the process named in an existing lock still exists by
 **  sending it a null signal.
 */
-STATIC BOOL
-ValidLock(name, JustChecking)
-    char		*name;
-    BOOL		JustChecking;
+static bool
+ValidLock(char *name, bool JustChecking)
 {
     register int	fd;
     register int	i;
@@ -60,10 +48,10 @@ ValidLock(name, JustChecking)
     errno = 0;
     if ((fd = open(name, O_RDONLY)) < 0) {
 	if (JustChecking) {
-	    return FALSE;
+	    return false;
 	} else {
 	    (void)fprintf(stderr, CANTOPEN, name, strerror(errno));
-	    return TRUE;
+	    return true;
 	}
     }
 
@@ -71,43 +59,41 @@ ValidLock(name, JustChecking)
     if (BinaryLock) {
 	if (read(fd, (char *)&pid, sizeof pid) != sizeof pid) {
 	    (void)close(fd);
-	    return FALSE;
+	    return false;
 	}
     }
     else {
 	if ((i = read(fd, buff, sizeof buff - 1)) <= 0) {
 	    (void)close(fd);
-	    return FALSE;
+	    return false;
 	}
 	buff[i] = '\0';
 	errno = 0;
 	pid = strtol(buff, NULL, 0);
 	if (errno != 0) {
 	    (void)close(fd);
-	    return FALSE;
+	    return false;
 	}
     }
     (void)close(fd);
-    if ((PID_T)pid <= 0)
-	return FALSE;
+    if ((pid_t)pid <= 0)
+	return false;
 
     /* Send the signal. */
     errno = 0;
-    if (kill((PID_T)pid, 0) < 0 && errno == ESRCH)
-	return FALSE;
+    if (kill((pid_t)pid, 0) < 0 && errno == ESRCH)
+	return false;
 
     /* Either the kill worked, or we're optimistic about the error code. */
-    return TRUE;
+    return true;
 }
 
 
 /*
 **  Unlink a file, print a message on error, and exit.
 */
-STATIC NORETURN
-UnlinkAndExit(name, x)
-    char	*name;
-    int		x;
+static void
+UnlinkAndExit(char *name, int x)
 {
     errno = 0;
     if (unlink(name) < 0)
@@ -119,68 +105,85 @@ UnlinkAndExit(name, x)
 /*
 **  Print a usage message and exit.
 */
-STATIC NORETURN
-Usage()
+static void
+Usage(void)
 {
     (void)fprintf(stderr,
-        "Usage: shlock -f file [-p pid] [-b|-u] [-c]\n"
+        "Usage: shlock [-h] [-V] [-p pid] [-b|-u] [-c] -f file\n"
 	"\n"
-	"\t-f file\tlock filename\n"
-	"\t-p pid\tif lock is granted, lock with pid (def: parent process ID)\n"
-	"\t-b\twrite pid into lock file in binary format (def: ASCII)\n"
-	"\t-u\talias for -b\n"
-	"\t-c\ttest for lock without locking\n"
+	"\t-h\t\tprint help message and exit\n"
+	"\t-V\t\tprint version string and exit\n"
+	"\n"
+	"\t-p pid\t\tif lock is granted, lock with pid (def: parent process ID)\n"
+	"\t-b\t\twrite pid into lock file in binary format (def: ASCII)\n"
+	"\t-u\t\talias for -b\n"
+	"\t-c\t\ttest for lock without locking\n"
+	"\n"
+	"\t-f file\t\tlock filename (NOTE: -f file is required)\n"
 	"\n"
 	"without -c:\n"
-	"\texit 0 (TRUE shell exit) if lock was created and granted to pid\n"
-	"\texit 1 (FALSE shell exit) if locked\n"
+	"\n"
+	"\texit 0 (true shell exit) if lock was created and granted to pid\n"
+	"\texit 1 (false shell exit) if locked\n"
 	"\n"
 	"with -c:\n"
-	"\texit 0 (TRUE shell exit) if not locked\n"
-	"\texit 1 (FALSE shell exit) if locked\n");
+	"\n"
+	"\texit 0 (true shell exit) if not locked\n"
+	"\texit 1 (false shell exit) if locked\n"
+	"\n"
+	"shlock version: %s\n", VERSION);
     exit(1);
     /* NOTREACHED */
 }
 
 
 int
-main(ac, av)
-    int			ac;
-    char		*av[];
+main(int ac, char *av[])
 {
     register int	i;
     register char	*p;
     register int	fd;
-    char		tmp[BUFSIZ];
-    char		buff[BUFSIZ];
+    char		tmp[BUFSIZ+1];
+    char		buff[BUFSIZ+1];
     char		*name;
     long		pid;
-    BOOL		ok;
-    BOOL		JustChecking;
+    bool		ok;
+    bool		JustChecking;
     extern int		optind;
     extern char *	optarg;
+    char *program;
 
     /* Set defaults. */
+    program = av[0];
     pid = 0;
     name = NULL;
-    JustChecking = FALSE;
+    JustChecking = false;
     (void)umask(NEWSUMASK);
     pid = (long)getppid();
+    memset(tmp, 0, sizeof(tmp));
+    memset(buff, 0, sizeof(buff));
 
     /* Parse JCL. */
-    while ((i = getopt(ac, av, "bcup:f:")) != EOF)
+    while ((i = getopt(ac, av, "hVbcup:f:")) != EOF)
 	switch (i) {
-	default:
+	case 'h':                   /* -h - print help message and exit */
 	    Usage();
 	    /* NOTREACHED */
-	    break;
+
+	case 'V':
+	    (void) printf("%s\n", VERSION);
+	    exit(2); /* ooo */
+	    /*NOTREACHED*/
+
 	case 'b':
 	case 'u':
-	    BinaryLock = TRUE;
+	    BinaryLock = true;
 	    break;
+
 	case 'c':
-	    JustChecking = TRUE;
+	    JustChecking = true;
 	    break;
+
 	case 'p':
 	    errno = 0;
 	    pid = strtol(optarg, NULL, 0);
@@ -188,13 +191,29 @@ main(ac, av)
 		pid = 0;
 	    }
 	    break;
+
 	case 'f':
 	    name = optarg;
+	    break;
+
+	case ':':
+            (void) fprintf(stderr, "%s: ERROR: requires an argument -- %c\n", program, optopt);
+	    Usage();
+            /*NOTREACHED*/
+
+        case '?':
+            (void) fprintf(stderr, "%s: ERROR: illegal option -- %c\n", program, optopt);
+	    Usage();
+            /*NOTREACHED*/
+
+	default:
+	    Usage();
+	    /* NOTREACHED */
 	    break;
 	}
     ac -= optind;
     av += optind;
-    if (ac || (PID_T)pid <= 0 || name == NULL)
+    if (ac || (pid_t)pid <= 0 || name == NULL)
 	Usage();
 
     /* Create the temp file in the same directory as the destination. */
@@ -240,11 +259,11 @@ main(ac, av)
     /* Write the process ID. */
     errno = 0;
     if (BinaryLock)
-	ok = write(fd, (POINTER)pid, (SIZE_T)sizeof pid) == sizeof pid;
+	ok = write(fd, (void *)pid, (size_t)sizeof pid) == sizeof pid;
     else {
 	(void)sprintf(buff, "%ld\n", pid);
 	i = strlen(buff);
-	ok = write(fd, (POINTER)buff, (SIZE_T)i) == i;
+	ok = write(fd, (void *)buff, (size_t)i) == i;
     }
     if (!ok) {
 	(void)fprintf(stderr, "Can't write PID to \"%s\", %s\n",
@@ -257,7 +276,7 @@ main(ac, av)
 
     /* Handle the "-c" flag. */
     if (JustChecking) {
-	if (ValidLock(name, TRUE))
+	if (ValidLock(name, true))
 	    UnlinkAndExit(tmp, 1);
 	UnlinkAndExit(tmp, 0);
     }
@@ -269,7 +288,7 @@ main(ac, av)
 	switch (errno) {
 	case EEXIST:
 	    /* File exists; if lock is valid, give up. */
-	    if (ValidLock(name, FALSE))
+	    if (ValidLock(name, false))
 		UnlinkAndExit(tmp, 1);
 	    if (unlink(name) < 0) {
 		(void)fprintf(stderr, CANTUNLINK, name, strerror(errno));

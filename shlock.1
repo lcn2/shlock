@@ -1,10 +1,15 @@
-.\" $Revision: 1.4 $
+.\" $Revision: 1.4.1 $
 .TH SHLOCK 1
 .SH NAME
 shlock \- create lock files for use in shell scripts
 .SH SYNOPSIS
 .B shlock
-.BI \-f " name"
+[
+.B \-h
+]
+[
+.B \-V
+]
 [
 .BI \-p " pid"
 ]
@@ -17,6 +22,7 @@ shlock \- create lock files for use in shell scripts
 [
 .B \-c
 ]
+.BI \-f " name"
 .SH DESCRIPTION
 .I Shlock
 tries to create a lock file named
@@ -70,9 +76,11 @@ stop at the first non-digit, leading
 not withstanding.
 .SH OPTIONS
 .TP
-.BI \-f " name"
-The lock file to create, test and/or use.
-While this is an option, it is required.  :-)
+.B \-h
+Print help message and exit.
+.TP
+.B \-V
+Print version and exit.
 .TP
 .BI \-p " pid"
 The process ID to write to the lock file if it is obtained.
@@ -111,6 +119,10 @@ When
 is given, then any
 .BI \-p " pid"
 is ignored.
+.TP
+.BI \-f " name"
+The lock file to create, test and/or use.
+While this is an option, it is required.  :-)
 .SH EXAMPLES
 The following example shows how
 .I shlock
@@ -242,6 +254,7 @@ and the removal a needless sleep by
 Landon Curt Noll
 (http://www.isthe.com/chongo/index.html).
 .de R$
+.sp 1
 This is revision \\$3, dated \\$4.
 ..
-.R$ $Id: shlock.1,v 1.4 2005/01/05 09:28:02 chongo Exp $
+.R$ $Id: shlock.1,v 1.4.1 2025/03/25 09:28:02 chongo Exp $
