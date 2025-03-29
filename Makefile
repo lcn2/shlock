@@ -90,6 +90,6 @@ install: all shlock.1
 	@if [[ $$(${ID} -u) != 0 ]]; then echo "ERROR: must be root to make $@" 1>&2; exit 2; fi
 	${INSTALL} -d -m 0755 ${DESTDIR}
 	${INSTALL} -m 0555 ${TARGETS} ${DESTDIR}
-	${INSTALL} -m 0644 -d ${MAN1DIR}
+	${INSTALL} -m 0755 -d ${MAN1DIR}
 	${INSTALL} -m 0644 shlock.1 ${MAN1DIR}/shlock.1
 	${V} echo DEBUG =-= $@ end =-=
