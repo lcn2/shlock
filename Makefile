@@ -38,8 +38,9 @@ CFLAGS= -O3 -g3 --pedantic -Wall
 V=@:
 #V=@
 
-DESTDIR= /usr/local/bin
-MAN1DIR = /usr/local/man/man1
+PREFIX= /usr/local
+DESTDIR= ${PREFIX}/bin
+MAN1DIR= ${PREFIX}/man/man1
 
 TARGETS= shlock
 
