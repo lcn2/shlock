@@ -1,6 +1,6 @@
 # shlock
 
-create lock files for use in shell scripts
+Create lock files for use in shell scripts.
 
 
 # To install
@@ -8,35 +8,6 @@ create lock files for use in shell scripts
 ```sh
 make clobber all
 sudo make install clobber
-```
-
-
-# To use
-
-```sh
-/usr/local/bin/shlock [-h] [-V] [-p pid] [-b|-u] [-c] -f file
-
-        -h              print help message and exit
-        -V              print version string and exit
-
-        -p pid          if lock is granted, lock with pid (def: parent process ID)
-        -b              write pid into lock file in binary format (def: ASCII)
-        -u              alias for -b
-        -c              test for lock without locking
-
-        -f file         lock filename (NOTE: -f file is required)
-
-without -c:
-
-        exit 0 (true shell exit) if lock was created and granted to pid
-        exit 1 (false shell exit) if locked
-
-with -c:
-
-        exit 0 (true shell exit) if not locked
-        exit 1 (false shell exit) if locked
-
-shlock version: 1.6.1 2025-03-25
 ```
 
 
@@ -138,6 +109,36 @@ is how this would be done:
     fi
 
     # do something ...
+
+
+# To use
+
+```
+/usr/local/bin/shlock [-h] [-V] [-p pid] [-b|-u] [-c] -f file
+
+        -h              print help message and exit
+        -V              print version string and exit
+
+        -p pid          if lock is granted, lock with pid (def: parent process ID)
+        -b              write pid into lock file in binary format (def: ASCII)
+        -u              alias for -b
+        -c              test for lock without locking
+
+        -f file         lock filename (NOTE: -f file is required)
+
+without -c:
+
+        exit 0 (true shell exit) if lock was created and granted to pid
+        exit 1 (false shell exit) if locked
+
+with -c:
+
+        exit 0 (true shell exit) if not locked
+        exit 1 (false shell exit) if locked
+
+shlock version: 1.6.1 2025-03-25
+```
+
 
 # Reporting Security Issues
 
