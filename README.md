@@ -142,4 +142,4 @@ shlock version: 1.6.1 2025-03-25
 
 # Reporting Security Issues
 
-To report a security issue, please visit "[Reporting Security Issues](https://github.com/lcn2/XXX/security/policy)".
+To report a security issue, please visit "[Reporting Security Issues](https://github.com/lcn2/shlock/security/policy)".
